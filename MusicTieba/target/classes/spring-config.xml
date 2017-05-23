@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
+
+
+
+	<!-- 加载db.properties文件中的内容，db.properties文件中key命名要有一定的特殊规则 -->
+	<context:property-placeholder location="classpath:db.properties" />
+
+
+	<!--控制搜索器 -->
+	<context:component-scan base-package="com.musictieba.*">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	<!--配置页面跳转目录和跳转文件 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:prefix="/jsp/" p:suffix=".jsp" />
+	<!-- 格式化配置 -->
+	<bean id="conversionService"
+		class="org.springframework.format.support.FormattingConversionServiceFactoryBean" />
+	<mvc:annotation-driven conversion-service="conversionService" />
+	<!-- 静态资源配置 -->
+	<mvc:resources mapping="/css/**" location="/stylefiles/" />
+	<mvc:resources mapping="/img/**" location="/images/" />
+	<mvc:resources mapping="/upload/**" location="/upload/" />
+	<mvc:resources mapping="/photo/**" location="/photo/" />
+	<mvc:resources mapping="/uediter/**" location="/uediter/" />
+	<mvc:resources mapping="/musicfile/**" location="/musicfile/" />
+	<!--配置数据源 -->
+	<bean id="dataSource" class="org.logicalcobwebs.proxool.ProxoolDataSource">
+		<property name="driver" value="${jdbc.driver}"></property>
+		<property name="driverUrl"
+			value="${jdbc.driverUrl}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<!--连接池数量配置 -->
+		<property name="maximumConnectionCount" value="${jdbc.maximumConnectionCount}" />
+		<property name="minimumConnectionCount" value="${jdbc.minimumConnectionCount}" />
+	</bean>
+	<!-- sessionFactory配置 注：该session与web服务器中的session不是同一种对象，该session是hibernate操作数据库的工具 -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<!-- 配置数据源 -->
+		<property name="dataSource" ref="dataSource" />
+		<!-- 配置映射类扫描路径 -->
+		<property name="packagesToScan">
+			<list>
+				<value>com.musictieba.pojo</value>
+			</list>
+		</property>
+
+
+		<!-- hibernate的相关配置 -->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLInnoDBDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<!-- Hibernate相关性能配置 -->
+				<prop key="hibernate.query.substitution">true 1,false 0</prop>
+				<!-- 为Hibernate关联的批量抓取设置默认数量.取值 建议的取值为4, 8, 和16 -->
+				<prop key="hibernate.default_batch_fetch_size">16</prop>
+				<!-- 为单向关联(一对一, 多对一)的外连接抓取（outer join fetch）树设置最大深度. 值为0意味着将关闭默认的外连接抓取.取值 
+					建议在0到3之间取值 -->
+				<prop key="hibernate.max_fetch_depth">2</prop>
+				<!-- 如果开启, Hibernate将收集有助于性能调节的统计数据.取值true | false -->
+				<prop key="hibernate.generate_statistics">true</prop>
+				<!-- 为Hibernate关联的批量抓取设置默认数量.取值 建议的取值为4, 8, 和16 -->
+				<prop key="hibernate.bytecode.use_reflection_optimizer">true</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- 声明式事务的配置 -->
+	<!-- 配置Spring事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<!-- 配置事务加载规则 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!-- 配置要加载事务的方法及其加载规则 -->
+			<tx:method name="list*" propagation="REQUIRED" read-only="true" />
+			<tx:method name="to*" propagation="REQUIRED" read-only="true" />
+			<tx:method name="do*" propagation="REQUIRED" />
+		</tx:attributes>
+	</tx:advice>
+
+	<aop:aspectj-autoproxy expose-proxy="true" />
+	<aop:config expose-proxy="true">
+		<!-- 事务类搜索配置(事务切点) -->
+		<aop:pointcut id="txPointCut"
+			expression="execution(* com.musictieba..controller..*.*(..))" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointCut" />
+	</aop:config>
+
+
+
+	<!-- 配置文件上传 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 编码格式 -->
+		<property name="defaultEncoding" value="utf-8" />
+		<!-- 配置文件的最大上传容量 -->
+		<property name="maxUploadSize" value="10485760" />
+		<!-- 配置最大内存 -->
+		<property name="maxInMemorySize" value="3145728" />
+	</bean>
+	<!-- 文件上传的异常处理配置 -->
+	<bean id="uploadExceptionResolver"
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<!-- 文件大小超标 -->
+				<prop
+					key="org.springframework.web.multipart.MaxUploadSizeExceededException">over_size_error</prop>
+			</props>
+		</property>
+	</bean>
+
+
+	<!-- 拦截器设置 -->
+    <mvc:interceptors>   
+    <mvc:interceptor>  
+        <mvc:mapping path="/mainpage/changeinfo"/>  
+        <mvc:mapping path="/mainpage/changephoto"/>  
+        <mvc:mapping path="/mainpage/changepwd"/>  
+        <mvc:mapping path="/music/addmusic"/>  
+        <mvc:mapping path="/music/managemusic"/> 
+        <mvc:mapping path="/note/mynote"/> 
+        <mvc:mapping path="/note/managenote"/>   
+        <bean class="com.musictieba.interceptors.Member"/>  
+    </mvc:interceptor>  
+     <mvc:interceptor>
+         <mvc:mapping path="/mainpage/userlist"/>  
+         <mvc:mapping path="/note/managenote"/>   
+         <mvc:mapping path="/music/managemusic"/>      
+         <bean class="com.musictieba.interceptors.Admin"/> 
+     </mvc:interceptor> 
+</mvc:interceptors>
+</beans>
