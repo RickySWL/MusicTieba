@@ -1,5 +1,5 @@
 <%@ page language="java"
-	import="com.java.util.*,com.musictieba.entity.*"
+	import="com.java.util.*,com.musictieba.pojo.*"
 	contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%
 	String path = request.getContextPath();
@@ -77,20 +77,9 @@ body {
 }
 </style>
 </head>
-<%
-	User u = (User) session.getAttribute("ui");
-	String userName = "";
-	String email = "";
-	String photoUrl = "";
-	if (u != null) {
-		userName = u.getUserName();
-		email = u.getEmail();
-		photoUrl = u.getPhotoUrl();
-	}
-%>
 <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
 <script type="text/javascript">
-var pu="<%=photoUrl%>";
+var pu="${sessionScope.ui.photoUrl}";
 $(document).ready(function(){
 });
 function check(){
@@ -155,7 +144,7 @@ function saveinfo(un,em){
 	<div id="frame">
 		<div id="user_photo_a">
 			<span class="photo_tip">头像</span><img id="photo" alt="头像"
-				src="<%=basePath%><%=photoUrl%>"> <input class="change_photo"
+				src="<%=basePath%>${sessionScope.ui.photoUrl}"> <input class="change_photo"
 				type="button" value="修改头像"
 				onclick="javascript:window.location.href='<%=basePath%>mainpage/changephoto';">
 		</div>
@@ -163,11 +152,11 @@ function saveinfo(un,em){
 			<span id="word_tip">请编辑您的信息:</span>
 			<div id="user_name_a" class="ua">
 				<span>昵称：</span><input type="text" id="userName" name="userName"
-					maxlength=30 value="<%=userName%>">
+					maxlength=30 value="${sessionScope.ui.userName}">
 			</div>
 			<div id="user_email_a" class="ua">
 				<span>邮箱：</span><input type="text" id="email" name="email"
-					maxlength=30 value="<%=email%>">
+					maxlength=30 value="${sessionScope.ui.email}">
 			</div>
 			<div id="action_a" class="ua">
 				<input type="button" onclick="check();" value="保存">

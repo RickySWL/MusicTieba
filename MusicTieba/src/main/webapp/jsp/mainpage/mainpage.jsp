@@ -1,5 +1,5 @@
 <%@ page language="java"
-	import="com.java.util.*,com.musictieba.entity.*"
+	import="com.java.util.*"
 	contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%
 	String path = request.getContextPath();
